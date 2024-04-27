@@ -9,6 +9,8 @@ class ElementData:
         def totalPrice(self) -> float:
             return self.quantity * self.price
 
-    def __init__(self, name: str, materials: list[Material] = []):
+    def __init__(self, name: str, materials: list[Material] = [], reminders: list[str] = []):
         self.name = name
         self.materials = materials
+        self.finalized = False
+        self.reminders = reminders

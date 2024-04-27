@@ -1,38 +1,44 @@
 from functools import reduce
 import customtkinter as tk
 import sys
+import datetime as dt
 from utils import ElementData
 
+showFinalized = True
+
 elements = [
-    ElementData("Element 1", [
+    ElementData("Galpao 1", [
         ElementData.Material("Material 1", "Description 1"),
         ElementData.Material("Material 2", "Description 2"),
         ElementData.Material("Material 3", "Description 3"),
     ]),
-    ElementData("Element 2", [
+    ElementData("Galpao 2", [
         ElementData.Material("Material 4", "Description 4"),
         ElementData.Material("Material 5", "Description 5"),
         ElementData.Material("Material 6", "Description 6"),
+    ], [
+        dt.datetime.now().strftime("%d/%m/%Y %H:%M:%S"),
+        dt.datetime(2022, 12, 31).strftime("%d/%m/%Y %H:%M:%S"),
     ]),
-    ElementData("Element 3", [
+    ElementData("Galpao 3", [
         ElementData.Material("Material 7", "Description 7"),
         ElementData.Material("Material 8", "Description 8"),
         ElementData.Material("Material 9", "Description 9"),
     ]),
-    ElementData("Element 4", [
+    ElementData("Galpao 4", [
         ElementData.Material("Material 10", "Description 10"),
         ElementData.Material("Material 11", "Description 11"),
         ElementData.Material("Material 12", "Description 12"),
     ]),
 ]
+elements[0].finalized = True
 
 class PopUp(tk.CTkToplevel):
     def __init__(self, master):
         super().__init__(master)
-        self.title("PopUp")
-        self.geometry("200x200")
-        self.label = tk.CTkLabel(self, text="PopUp", font=("Arial", 20))
-        self.label.pack(expand=True, fill='both')
+        self.title("Detalhes do projeto")
+        self.geometry("600x400")
+        self.resizable(False, False)
 
 class Element(tk.CTkFrame):
     def __init__(self, master, data: ElementData, callback=None, width=200, height=200):
@@ -40,21 +46,45 @@ class Element(tk.CTkFrame):
         self.data = data
         self.pack_propagate(False) # prevent the frame to resize to the label size
 
+        callback = self.open_popup if callback is None else callback
+
         self.bind("<Button-1>", callback) # call a function when clicked
         self.label = tk.CTkLabel(self, text=data.name, font=("Arial", 20))
         self.label.bind("<Button-1>", callback) # call a function when clicked
         self.label.pack(pady=10, padx=10)
 
-        materials = data.materials if len(data.materials) < 4 else data.materials[:3]
-        text = reduce(lambda x, y: x+"\n"+y, [f"{material.name}: {material.description}" for material in materials],"Materiais:")
-        self.description = tk.CTkLabel(self, text=text, font=("Arial", 15))
+        self.reminder_frame = tk.CTkFrame(self, corner_radius=10, border_width=2)
+        self.reminder_frame.bind("<Button-1>", callback) # call a function when clicked
+        self.reminder_frame.pack(expand=True, fill='both', padx=10, pady=10)
+
+        self.reminder = "Lembretes:\n" + "\n".join(data.reminders) if data.reminders else "Sem lembretes"
+        self.description = tk.CTkLabel(self.reminder_frame, text=self.reminder, font=("Arial", 15))
         self.description.bind("<Button-1>", callback) # call a function when clicked
-        self.description.pack(side='top', padx=5, pady=5)
+        self.description.pack(side='top', padx=5, pady=5, anchor='w')
+        
+    def open_popup(self, event):
+        pop = PopUp(self)
+        label = tk.CTkLabel(pop, text=self.data.name, font=("Arial", 20))
+        label.pack(pady=10, padx=10, anchor='w')
+
+        frame_reminder = tk.CTkFrame(pop, corner_radius=10, border_width=2)
+        frame_reminder.pack(expand=True, fill='both', padx=10, pady=10)
+
+        reminders = tk.CTkLabel(frame_reminder, text=self.reminder, font=("Arial", 17))
+        reminders.pack(side='top', padx=5, pady=5)
+
+        frame_materials = tk.CTkFrame(pop, corner_radius=10, border_width=2)
+        frame_materials.pack(expand=True, fill='both', padx=10, pady=10)
+        #show materials
+        text = reduce(lambda x, y: x+"\n"+y, [f"{material.name}: {material.description}" for material in self.data.materials],"Materiais:")
+        materials = tk.CTkLabel(frame_materials, text=text, font=("Arial", 17))
+        materials.pack(side='top', padx=5, pady=5)
+
 
 class ElementsFrame(tk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
-        self.label = tk.CTkLabel(self, text="ElementsFrame", font=("Arial", 20))
+        self.label = tk.CTkLabel(self, text="Projetos", font=("Arial", 20))
         self.label.pack(pady=10, padx=10, anchor='w')
 
         self.elements = tk.CTkFrame(self, corner_radius=10, border_width=2)
@@ -64,22 +94,23 @@ class ElementsFrame(tk.CTkFrame):
     def showElements(self, frame):
         elementWidth = 150
         elementHeight = 150
-        maxAtOneRow = 4
-        callback = lambda event: print("Element clicked")
-        for i, element in enumerate(elements):
-            e = Element(frame, element, callback, width=elementWidth, height=elementHeight)
-            e.grid(row=i//maxAtOneRow, column=i%maxAtOneRow, padx=5, pady=5, sticky='w')
         
-    def open_popup(self):
-        PopUp(self)
+        maxAtOneRow = 4
+        i = 0
+        for e_data in elements:
+            if not showFinalized and e_data.finalized: continue
+            e = Element(frame, e_data, callback=None, width=elementWidth, height=elementHeight)
+            e.grid(row=i//maxAtOneRow, column=i%maxAtOneRow, padx=5, pady=5, sticky='w')
+            i += 1
 
 class TopFrame(tk.CTkFrame):
     def __init__(self, master):
         super().__init__(master)
+        self.master = master
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
         buttons = [
-            {"text": "Ocultar projetos concluidos", "command": lambda: print("Button 1")},
+            {"text": "Ocultar projetos concluidos", "command": self.hideFinalized },
             {"text": "Criar novo projeto", "command": lambda: print("Button 2")},
             {"text": "Outro comando...", "command": lambda: print("To implement")},
             {"text": "Mais um comando...", "command": lambda: print("To implement")},
@@ -92,9 +123,15 @@ class TopFrame(tk.CTkFrame):
                 height=15,
             ).pack(side='left', padx=5, pady=5)
 
+    def hideFinalized(self):
+        global showFinalized
+        showFinalized = not showFinalized
+        self.master.reload_elements()
+
 class App(tk.CTk):
     def __init__(self):
         super().__init__()
+        self.title("Gerenciador de projetos")
         self.geometry("860x600")
 
         self.top_frame = TopFrame(self)
@@ -103,6 +140,11 @@ class App(tk.CTk):
 
         self.elements_frame = ElementsFrame(self)
         # self.elements_frame.grid(row=1, column=0)
+        self.elements_frame.pack(expand=True, fill='both')
+
+    def reload_elements(self):
+        self.elements_frame.destroy()
+        self.elements_frame = ElementsFrame(self)
         self.elements_frame.pack(expand=True, fill='both')
 
 tk.set_appearance_mode("dark")  # Modes: "System" (standard), "Dark", "Light"
