@@ -2,7 +2,7 @@ from functools import reduce
 import customtkinter as tk
 import sys
 import datetime as dt
-from utils import ElementData
+from utils import ElementData, showObjs
 
 showFinalized = True
 
@@ -111,7 +111,7 @@ class TopFrame(tk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         buttons = [
             {"text": "Ocultar projetos concluidos", "command": self.hideFinalized },
-            {"text": "Criar novo projeto", "command": lambda: print("Button 2")},
+            {"text": "Criar novo projeto", "command": self.createNewElement },
             {"text": "Outro comando...", "command": lambda: print("To implement")},
             {"text": "Mais um comando...", "command": lambda: print("To implement")},
         ]
@@ -127,6 +127,36 @@ class TopFrame(tk.CTkFrame):
         global showFinalized
         showFinalized = not showFinalized
         self.master.reload_elements()
+
+    def createNewElement(self):
+        pop = PopUp(self.master)
+        label = tk.CTkLabel(pop, text="Criar novo projeto", font=("Arial", 20))
+        label.pack(pady=10, padx=10, anchor='w')
+
+        #make frame scrollable
+        frame = tk.CTkScrollableFrame(pop, corner_radius=10, border_width=2)
+        frame.pack(expand=True, fill='both', padx=10, pady=10)
+
+        tk.CTkLabel(frame, text="Nome do projeto:", font=("Arial", 17)).pack(side='top', padx=5, pady=5, anchor='w')
+        name = tk.CTkEntry(frame, font=("Arial", 15))
+        name.pack(side='top', padx=5, pady=5, anchor='w')
+
+        tk.CTkLabel(frame, text="Materiais:", font=("Arial", 17)).pack(side='top', padx=5, pady=5, anchor='w')
+        materials = tk.CTkEntry(frame, font=("Arial", 15))
+        materials.pack(side='top', padx=5, pady=5, anchor='w')
+
+        def appendElement(name, materials):
+            elements.append(ElementData(name, [ElementData.Material(material, "") for material in materials.split(",")]))
+            pop.destroy()
+            self.master.reload_elements()
+
+        create_button = tk.CTkButton(frame, text="Criar", command=lambda: appendElement(name.get(), materials.get()))
+        create_button.pack(side='top', padx=5, pady=5, anchor='w')
+
+        cancel_button = tk.CTkButton(frame, text="Cancelar", command=pop.destroy)
+        cancel_button.pack(side='top', padx=5, pady=5, anchor='w')
+
+        showObjs(frame)
 
 class App(tk.CTk):
     def __init__(self):
