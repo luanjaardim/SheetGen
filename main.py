@@ -1,5 +1,6 @@
 from functools import reduce
 import customtkinter as tk
+from tkcalendar import Calendar, DateEntry
 import sys
 import datetime as dt
 from utils import ElementData, showObjs
@@ -70,6 +71,9 @@ class Element(tk.CTkFrame):
         frame_reminder = tk.CTkFrame(pop, corner_radius=10, border_width=2)
         frame_reminder.pack(expand=True, fill='both', padx=10, pady=10)
 
+        date = DateEntry(frame_reminder, width=12, background='darkblue', foreground='white', borderwidth=2)
+        date.pack(pady=10, padx=10, anchor='ne', side='right')
+
         reminders = tk.CTkLabel(frame_reminder, text=self.reminder, font=("Arial", 17))
         reminders.pack(side='top', padx=5, pady=5)
 
@@ -79,7 +83,9 @@ class Element(tk.CTkFrame):
         text = reduce(lambda x, y: x+"\n"+y, [f"{material.name}: {material.description}" for material in self.data.materials],"Materiais:")
         materials = tk.CTkLabel(frame_materials, text=text, font=("Arial", 17))
         materials.pack(side='top', padx=5, pady=5)
-
+    
+    def add_reminder(self):
+        print('To implement')
 
 class ElementsFrame(tk.CTkFrame):
     def __init__(self, master):
